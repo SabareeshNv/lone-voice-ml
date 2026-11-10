@@ -1,0 +1,107 @@
+---
+import { Image } from "astro:assets";
+import { MOODS } from "../data/moods";
+import { anchorId, formatDate, isoDate, postHref, type Essay } from "../lib/posts";
+import Mood from "./Mood.astro";
+import MoodGlyph from "./MoodGlyph.astro";
+import "../styles/entry.css";
+
+interface Props {
+  post: Essay;
+}
+
+const { post } = Astro.props;
+const { title, summary, cover, date, mood } = post.data;
+---
+
+<article
+  class:list={["entry", "entry--essay", { "has-cover": cover }]}
+  id={anchorId(post)}
+  tabindex="-1"
+  style={`--h: ${MOODS[mood].hue}`}
+>
+  <MoodGlyph mood={mood} class="entry__badge" />
+  <h3 class="entry__title ml-title" lang="ml"><a class="ml-title" href={postHref(post)}>{title}</a></h3>
+  {summary && <p class="entry__summary" lang="ml">{summary}</p>}
+  <p class="meta entry__meta">
+    <span class="kind">Essay</span>{" "}<span class="sep" aria-hidden="true">·</span>{" "}
+    <time datetime={isoDate(date)}>{formatDate(date)}</time>{" "}<span class="sep" aria-hidden="true">·</span>{" "}
+    <Mood mood={mood} />
+  </p>
+  {
+    cover && (
+      <Image
+        class="entry__cover"
+        src={cover.src}
+        alt={cover.alt}
+        widths={[240, 400, 640, 960]}
+        sizes="(min-width: 44rem) 14rem, calc(100vw - 6rem)"
+        loading="lazy"
+        decoding="async"
+      />
+    )
+  }
+</article>
+
+<style>
+  .kind {
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* A big title, with a marker stroke that fills in on hover. */
+  .entry__title {
+    font-size: var(--step-2);
+  }
+  .entry__title:lang(ml) {
+    font-size: calc(var(--step-2) * var(--uroob-scale));
+  }
+  .entry__title a {
+    color: var(--ink);
+    text-decoration-line: underline;
+    text-decoration-color: var(--mood-fill);
+    text-decoration-thickness: 0.2em;
+    text-decoration-skip-ink: none;
+    text-underline-offset: 0.14em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .entry__title a:hover {
+    background: var(--mood-fill);
+    color: var(--on-fill);
+    text-decoration-color: var(--mood-fill);
+  }
+  .entry__summary {
+    color: var(--ink-soft);
+    font-size: calc(var(--step-0) * 1.05);
+    max-width: 34rem;
+  }
+
+  /* The <img> is made by Astro's Image component, so it is matched by its class. */
+  .entry :global(.entry__cover) {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    border: 3px solid var(--ink);
+    border-radius: 0.75rem;
+    box-shadow: 7px 7px 0 var(--mood-fill);
+    margin-block-start: 0.4rem;
+  }
+
+  /* With room to spare, the cover sits to the right of the words. */
+  @container (min-width: 34rem) {
+    .entry--essay.has-cover {
+      grid-template-columns: minmax(0, 1fr) clamp(9rem, 34cqi, 14rem);
+      grid-template-rows: auto auto 1fr;
+      column-gap: 2rem;
+    }
+    .entry--essay.has-cover > :is(h3, p) {
+      grid-column: 1;
+    }
+    .entry--essay.has-cover :global(.entry__cover) {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+      margin: 0.4rem 7px 0 0;
+    }
+  }
+</style>

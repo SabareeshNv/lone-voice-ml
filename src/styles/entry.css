@@ -1,0 +1,74 @@
+/* ==========================================================================
+   A post in the thread: the parts shared by essays and scribbles (the padding
+   that clears the thread line, the mood sticker hung on the line, the line of
+   details, and the highlight when arriving from a permalink).
+   Imported by EssayEntry.astro and ScribbleEntry.astro; what belongs to only one
+   of them is in that component's <style>. Plain CSS (not scoped) because the
+   sticker is drawn by MoodGlyph, a separate component.
+   ========================================================================== */
+
+.entry {
+  --badge: 3.6rem;
+  position: relative;
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+  padding-block: 1.1rem 1.4rem;
+  padding-inline: calc(var(--badge) / 2 + 1.4rem) 1.25rem;
+  container-type: inline-size;
+  scroll-margin-top: 1.5rem;
+}
+.entry:focus {
+  outline: none; /* focused only programmatically, as a scroll target */
+}
+
+/* The mood sticker, centred on the thread line. */
+.entry__badge {
+  position: absolute;
+  top: 0.9rem;
+  inset-inline-start: calc(var(--badge) / -2 - var(--line) / 2);
+  width: var(--badge);
+  height: var(--badge);
+  padding: 0.45rem;
+  background-color: var(--mood-fill);
+}
+
+/* Date · mood · … (the rest comes from the .meta utility in base.css). */
+.entry__meta {
+  row-gap: 0.2rem;
+}
+
+/* Arriving at an entry from a permalink or from search. */
+.entry:target,
+.entry.is-current {
+  background: color-mix(in oklab, var(--mood-fill) 32%, var(--bg));
+}
+.entry:target .entry__badge,
+.entry.is-current .entry__badge {
+  scale: 1.2;
+  rotate: -10deg;
+  box-shadow: 0 0 0 5px var(--bg), 0 0 0 8px var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .entry__badge {
+    transition:
+      rotate 0.25s cubic-bezier(0.3, 1.6, 0.5, 1),
+      scale 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .entry:hover .entry__badge {
+    rotate: -9deg;
+    scale: 1.1;
+  }
+  .entry:target .entry__badge,
+  .entry.is-current .entry__badge {
+    animation: entry-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 1;
+  }
+}
+
+@keyframes entry-pop {
+  from {
+    scale: 0.6;
+    rotate: 20deg;
+  }
+}

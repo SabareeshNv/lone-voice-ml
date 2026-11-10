@@ -1,0 +1,42 @@
+---
+// Shared frame for the policy pages (copyright, privacy, content policy).
+import { formatDate } from "../lib/posts";
+import { SITE } from "../site";
+import Base from "./Base.astro";
+import "../styles/page-head.css";
+import "../styles/prose.css";
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <article class="legal">
+    <h1 class="thread__title">{title}</h1>
+    <p class="legal__updated">Last updated {formatDate(new Date(SITE.policiesUpdated))}</p>
+    <div class="prose">
+      <slot />
+      {
+        SITE.contact && (
+          <p>
+            Questions about this page may be sent to <a href={`mailto:${SITE.contact}`}>{SITE.contact}</a>.
+          </p>
+        )
+      }
+    </div>
+  </article>
+</Base>
+
+<style>
+  .legal {
+    max-width: var(--measure);
+  }
+  .legal__updated {
+    margin-block: 0.75rem 2rem;
+    color: var(--ink-soft);
+  }
+</style>

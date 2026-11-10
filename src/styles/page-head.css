@@ -1,0 +1,55 @@
+/* ==========================================================================
+   Page headings, shared by several pages: the big title, the line under it,
+   the small links beside it, and the "nothing here yet" note.
+   Imported by the pages and components that use it (home, essays/scribbles
+   lists, archive, moods, a mood's page, policy pages, 404).
+   ========================================================================== */
+
+/* The top of the home page (the picture) and of the moods overview. */
+.hero {
+  display: grid;
+  gap: 1.5rem;
+  margin-block-end: 3.25rem;
+}
+@media (max-width: 59.999rem) {
+  .hero {
+    margin-block-end: 2.25rem;
+  }
+}
+
+/* The heading block of a list page (essays, scribbles, archive). */
+.list-hero {
+  margin-block-end: 3rem;
+}
+
+.thread__title {
+  font-size: var(--step-4);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+/* ", page 2" after a title. */
+.thread__page {
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink-soft);
+}
+
+.hero__lede {
+  margin-block-start: 0.75rem;
+  font-size: var(--step-1);
+  color: var(--ink-soft);
+}
+
+/* "← The whole thread · Scribbles" under a heading. */
+.page-links {
+  margin-block-start: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+}
+
+.empty {
+  color: var(--ink-soft);
+}

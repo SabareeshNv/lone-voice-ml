@@ -1,0 +1,71 @@
+---
+// The stable permalink of a scribble. Visitors are sent straight on to the
+// scribble's current place in the thread (it moves as new posts arrive, and
+// every build updates the target). The page still carries the full text so
+// Pagefind can index it and the link works without the redirect.
+import type { GetStaticPaths } from "astro";
+import { render } from "astro:content";
+import Mood from "../../components/Mood.astro";
+import Base from "../../layouts/Base.astro";
+import "../../styles/prose.css";
+import {
+  excerpt,
+  formatDate,
+  getPosts,
+  isEssay,
+  isoDate,
+  threadHref,
+  type Post,
+} from "../../lib/posts";
+
+export const getStaticPaths = (async () => {
+  const all = await getPosts();
+  return all
+    .filter((p) => !isEssay(p))
+    .map((post) => ({ params: { id: post.id }, props: { post, inThread: threadHref(all, post) } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  post: Post;
+  inThread: string;
+}
+
+const { post, inThread } = Astro.props;
+const { date, mood } = post.data;
+const { Content } = await render(post);
+const searchTitle = excerpt(post.body, 70);
+// The page title and description are the scribble itself, so a shared link previews its text.
+---
+
+<Base title={excerpt(post.body, 70)} description={excerpt(post.body, 200)} redirectTo={inThread} type="article" published={date} noindex>
+  <article
+    class="scribble-page"
+    data-pagefind-body
+    data-pagefind-meta={`title:${searchTitle}`}
+  >
+    <h1 class="scribble-page__title" data-pagefind-ignore>
+      A scribble from <time datetime={isoDate(date)} data-pagefind-meta="date[datetime]">{formatDate(date)}</time>
+    </h1>
+    <div class="prose" lang="ml">
+      <Content />
+    </div>
+    <p class="meta" data-pagefind-ignore>
+      <Mood mood={mood} />{" "}<span class="sep" aria-hidden="true">·</span>{" "}
+      <a href={inThread}>Read it in the thread</a>
+    </p>
+  </article>
+</Base>
+
+<style>
+  .scribble-page {
+    display: grid;
+    gap: 1.25rem;
+    max-width: var(--measure);
+    justify-items: start;
+  }
+  .scribble-page__title {
+    font-size: var(--step-1);
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+</style>

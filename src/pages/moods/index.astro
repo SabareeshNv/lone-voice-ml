@@ -1,0 +1,96 @@
+---
+// Every mood that has at least one post, each with its sticker and a count.
+import MoodGlyph from "../../components/MoodGlyph.astro";
+import { MOODS, moodHref, moodKeys } from "../../data/moods";
+import Base from "../../layouts/Base.astro";
+import "../../styles/page-head.css";
+import { getPosts } from "../../lib/posts";
+
+const posts = await getPosts();
+const moods = moodKeys
+  .map((key, order) => ({ key, order, n: posts.filter((p) => p.data.mood === key).length }))
+  .filter((m) => m.n > 0)
+  .sort((a, b) => b.n - a.n || a.order - b.order);
+---
+
+<Base title="Moods" description="Every post in the thread carries a mood. Pick one to read all of them.">
+  <div class="thread">
+    <header class="hero">
+      <div class="hero__text">
+        <h1 class="thread__title">Moods</h1>
+        <p class="hero__lede">Every post carries a mood. Pick one to read them all.</p>
+      </div>
+    </header>
+
+    {moods.length === 0 && <p class="empty">Nothing written yet.</p>}
+
+    <ul class="mood-sheet" role="list">
+      {
+        moods.map((m) => (
+          <li>
+            <a href={moodHref(m.key)} style={`--h: ${MOODS[m.key].hue}`}>
+              <MoodGlyph mood={m.key} />
+              <span class="mood-sheet__name">{MOODS[m.key].label}</span>
+              <span class="mood-sheet__count">{m.n} {m.n === 1 ? "post" : "posts"}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="mood-sheet__back"><a href="/">← The whole thread</a></p>
+  </div>
+</Base>
+
+<style>
+  /* A sheet of stickers. */
+  .mood-sheet {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 2.75rem 1.5rem;
+  }
+  .mood-sheet a {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    padding-block: 0.25rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  /* The sticker is its own component, so it is matched by its class. */
+  .mood-sheet :global(.glyph) {
+    width: 7.5rem;
+    height: 7.5rem;
+    padding: 1.15rem;
+    margin-block-end: 0.5rem;
+    rotate: -5deg;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .mood-sheet li:nth-child(even) :global(.glyph) {
+    rotate: 4deg;
+  }
+  .mood-sheet__name {
+    font-size: var(--step-1);
+    font-weight: 700;
+    line-height: 1.1;
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 0.2em;
+    text-underline-offset: 0.14em;
+  }
+  .mood-sheet a:hover .mood-sheet__name {
+    text-decoration-color: var(--mood-fill);
+  }
+  .mood-sheet__count {
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+  .mood-sheet__back {
+    margin-block-start: 3rem;
+    font-weight: 700;
+  }
+</style>

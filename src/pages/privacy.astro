@@ -1,0 +1,48 @@
+---
+import Legal from "../layouts/Legal.astro";
+import { SITE } from "../site";
+---
+
+<Legal title="Privacy Policy" description={`What ${SITE.name} does and does not do with visitors' information.`}>
+  <p>
+    {SITE.name} is a personal blog. It is built to collect as little about visitors as possible.
+  </p>
+
+  <h2>What this site does not do</h2>
+  <ul>
+    <li>It has no accounts, comments, forms or newsletter sign-up, so it asks you for no personal details.</li>
+    <li>It uses no advertising, tracking pixels or analytics scripts, and sets no cookies.</li>
+    <li>It loads no fonts, scripts or images from other companies' servers. Fonts and search run from this site.</li>
+  </ul>
+
+  <h2>What is kept in your browser</h2>
+  <p>
+    If you choose Light or Dark with the theme switch, that choice is saved in your browser's local storage under
+    the name "theme", so the site looks the same next time. It never leaves your device and can be cleared in your
+    browser settings.
+  </p>
+
+  <h2>Search</h2>
+  <p>
+    Search works inside your browser, using an index of the posts that is downloaded in small pieces as you type.
+    Your search words are not sent to anyone and are not stored.
+  </p>
+
+  <h2>Server logs</h2>
+  <p>
+    Like any website, the company that hosts this site may keep technical records of requests, such as the IP address,
+    the page requested and the time, for security and operation. The author does not receive or use these records
+    to identify visitors.
+  </p>
+
+  <h2>Links to other sites</h2>
+  <p>
+    Posts may link to other websites. Those sites have their own privacy practices, which are not covered here.
+  </p>
+
+  <h2>Changes</h2>
+  <p>
+    If this changes, for instance if analytics or comments are added, this page will be updated and the date at the
+    top revised.
+  </p>
+</Legal>

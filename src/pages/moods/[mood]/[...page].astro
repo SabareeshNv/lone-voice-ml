@@ -1,0 +1,98 @@
+---
+// One page per mood: every post written in that mood, newest first, 30 to a page.
+// Only moods that have at least one post get a page.
+//   /moods/curious/   /moods/curious/2/ …
+import type { GetStaticPaths, Page } from "astro";
+import MoodGlyph from "../../../components/MoodGlyph.astro";
+import MonthList from "../../../components/MonthList.astro";
+import Pager from "../../../components/Pager.astro";
+import { MOODS, moodHref, moodKeys, type MoodKey } from "../../../data/moods";
+import Base from "../../../layouts/Base.astro";
+import "../../../styles/page-head.css";
+import { getPosts, groupByMonth, isEssay, PAGE_SIZE, type Post } from "../../../lib/posts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const all = await getPosts();
+  return moodKeys.flatMap((key) => {
+    const posts = all.filter((p) => p.data.mood === key);
+    if (posts.length === 0) return [];
+    const essays = posts.filter(isEssay).length;
+    return paginate(posts, {
+      params: { mood: key },
+      props: { mood: key, essays, scribbles: posts.length - essays },
+      pageSize: PAGE_SIZE,
+    });
+  });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  page: Page<Post>;
+  mood: MoodKey;
+  essays: number;
+  scribbles: number;
+}
+
+const { page, mood, essays, scribbles } = Astro.props;
+const { label } = MOODS[mood];
+const months = groupByMonth(page.data);
+const { currentPage, lastPage } = page;
+const pageUrl = (n: number) => (n <= 1 ? moodHref(mood) : `${moodHref(mood)}${n}/`);
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const counts = [essays > 0 && plural(essays, "essay"), scribbles > 0 && plural(scribbles, "scribble")]
+  .filter(Boolean)
+  .join(" and ");
+---
+
+<Base
+  title={currentPage > 1 ? `Mood: ${label}, page ${currentPage}` : `Mood: ${label}`}
+  description={`Everything in the thread written in a ${label} mood: ${counts}.`}
+>
+  <div class="thread">
+    <header class="mood-hero">
+      <MoodGlyph mood={mood} class="mood-hero__badge" />
+      <div class="mood-hero__text">
+        <h1 class="thread__title">
+          {label}
+          {currentPage > 1 && <span class="thread__page">, page {currentPage}</span>}
+        </h1>
+        <p class="hero__lede">{counts}, newest first.</p>
+        <p class="page-links">
+          <a href="/moods/">← All moods</a>
+          <span class="sep" aria-hidden="true">·</span>
+          <a href="/">The whole thread</a>
+        </p>
+      </div>
+    </header>
+
+    <MonthList months={months} />
+
+    <Pager
+      current={currentPage}
+      last={lastPage}
+      newer={currentPage > 1 ? pageUrl(currentPage - 1) : undefined}
+      older={currentPage < lastPage ? pageUrl(currentPage + 1) : undefined}
+      label={`${label} pages`}
+    />
+  </div>
+</Base>
+
+<style>
+  /* The big sticker beside the mood's name. */
+  .mood-hero {
+    display: flex;
+    align-items: center;
+    gap: clamp(1rem, 3vw, 2rem);
+    margin-block-end: 3rem;
+  }
+  /* The sticker is its own component, so it is matched by its class. */
+  .mood-hero :global(.mood-hero__badge) {
+    width: clamp(5.5rem, 16vw, 9rem);
+    height: clamp(5.5rem, 16vw, 9rem);
+    padding: clamp(0.8rem, 2.4vw, 1.4rem);
+    rotate: -8deg;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .mood-hero__text {
+    min-width: 0;
+  }
+</style>

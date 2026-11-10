@@ -1,0 +1,72 @@
+---
+import { LOST } from "../data/art";
+import Base from "../layouts/Base.astro";
+import "../styles/page-head.css";
+---
+
+<Base title="Page not found" noindex>
+  <div class="not-found">
+    <svg class="lost" viewBox="0 0 400 260" aria-hidden="true" focusable="false" set:html={LOST}></svg>
+    <h1 class="thread__title">Lost the thread</h1>
+    <p>There is nothing at this address. It may have moved, or it never existed.</p>
+    <p><a class="button" href="/">Back to the thread</a></p>
+  </div>
+</Base>
+
+<style>
+  .not-found {
+    display: grid;
+    gap: 1.25rem;
+    max-width: var(--measure);
+    justify-items: start;
+  }
+
+  /* The drawing (from src/data/art.ts) is set with set:html, so its parts are
+     outside the page's scope. Unlike the mood stickers, its lines follow the theme. */
+  .lost {
+    width: min(100%, 24rem);
+    height: auto;
+    overflow: visible;
+  }
+  .lost :global(.k),
+  .lost :global(.kf) {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .lost :global(.k) {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 3;
+  }
+  .lost :global(.kf) {
+    fill: var(--ink);
+  }
+  .lost :global(.mh-thread) {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .lost :global(.mh-knot) {
+    fill: var(--k);
+    stroke: var(--ink);
+    stroke-width: 3;
+  }
+
+  /* Outlined, with a hard shadow that closes on press. */
+  .button {
+    display: inline-block;
+    padding: 0.5rem 1.15rem 0.6rem;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .button:hover {
+    translate: 2px 2px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+</style>

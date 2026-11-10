@@ -1,0 +1,213 @@
+---
+// Every post, year by year, as a plain list: date, title (or the opening of a scribble), mood.
+import Mood from "../components/Mood.astro";
+import { MOODS } from "../data/moods";
+import Base from "../layouts/Base.astro";
+import "../styles/page-head.css";
+import {
+    excerpt,
+    getPosts,
+    groupByYear,
+    isEssay,
+    isoDate,
+    postHref,
+    shortDate,
+    threadHref,
+} from "../lib/posts";
+
+const posts = await getPosts();
+const years = groupByYear(posts);
+const first = posts.at(-1)?.data.date;
+const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const plural = (n: number) => count(n, "post");
+// "8 posts – 2 essays, 6 scribbles" (a kind with none is left out)
+const breakdown = (list: typeof posts) => {
+    const essays = list.filter(isEssay).length;
+    const scribbles = list.length - essays;
+    const parts = [
+        essays > 0 && count(essays, "essay"),
+        scribbles > 0 && count(scribbles, "scribble"),
+    ].filter(Boolean);
+    return `${plural(list.length)} – ${parts.join(", ")}`;
+};
+---
+
+<Base
+    title="Archive"
+    description={`Every post on the blog, year by year: ${plural(posts.length)}${first ? ` since ${first.getUTCFullYear()}` : ""}.`}
+>
+    <div class="thread">
+        <header class="list-hero">
+            <h1 class="thread__title">Archive</h1>
+            <p class="hero__lede">
+                Every post, year by year — {plural(posts.length)} so far.
+            </p>
+            {years.length > 1 && (
+                <nav class="archive-years" aria-label="Jump to a year">
+                    <ul role="list">
+                        {years.map((g) => (
+                            <li>
+                                <a href={`#y-${g.year}`}>{g.year}</a>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+            )}
+        </header>
+
+        {posts.length === 0 && <p class="empty">Nothing written yet.</p>}
+
+        {years.map((g) => (
+            <section class="archive-year" aria-labelledby={`y-${g.year}`}>
+                <h2 class="archive-year__title" id={`y-${g.year}`}>
+                    {g.year}{" "}
+                    <span class="archive-year__n">{breakdown(g.posts)}</span>
+                </h2>
+                <ol class="archive-list" role="list">
+                    {g.posts.map((post) => (
+                        <li
+                            class="archive-item"
+                            style={`--h: ${MOODS[post.data.mood].hue}`}
+                        >
+                            <time
+                                class="archive-item__date"
+                                datetime={isoDate(post.data.date)}
+                            >
+                                {shortDate(post.data.date)}
+                            </time>
+                            <a
+                                class:list={[
+                                    "archive-item__link",
+                                    isEssay(post)
+                                        ? "is-essay ml-title"
+                                        : "is-scribble",
+                                ]}
+                                href={
+                                    isEssay(post)
+                                        ? postHref(post)
+                                        : threadHref(posts, post)
+                                }
+                                lang="ml"
+                            >
+                                <span class="vh">
+                                    {isEssay(post) ? "Essay: " : "Scribble: "}
+                                </span>
+                                {isEssay(post)
+                                    ? post.data.title
+                                    : excerpt(post.body, 90)}
+                            </a>
+                            <Mood mood={post.data.mood} />
+                        </li>
+                    ))}
+                </ol>
+            </section>
+        ))}
+    </div>
+</Base>
+
+<style>
+    /* Jump to a year. */
+    .archive-years ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        margin: 1.25rem 0 0;
+        padding: 0;
+        list-style: none;
+    }
+    .archive-years a {
+        display: inline-block;
+        padding: 0.1rem 0.8rem;
+        border: 2px solid var(--ink);
+        border-radius: 999px;
+        color: var(--ink);
+        font-weight: 700;
+        text-decoration: none;
+    }
+    .archive-years a:hover {
+        background: var(--ink);
+        color: var(--bg);
+    }
+
+    .archive-year {
+        scroll-margin-top: 1.5rem;
+    }
+    .archive-year + .archive-year {
+        margin-block-start: 3rem;
+    }
+    .archive-year__title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.25rem 1rem;
+        margin-block-end: 0.75rem;
+        padding-block-end: 0.5rem;
+        border-block-end: 3px solid var(--ink);
+        font-size: var(--step-3);
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        line-height: 1;
+    }
+    .archive-year__n {
+        color: var(--ink-soft);
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0;
+    }
+
+    /* One post per row: date, title (or the opening of a scribble), mood. */
+    .archive-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+    .archive-item {
+        display: grid;
+        grid-template-columns: 4.25rem minmax(0, 1fr);
+        align-items: baseline;
+        gap: 0.15rem 1rem;
+        padding-block: 0.7rem;
+        border-block-end: 1px solid var(--rule);
+    }
+    .archive-item__date {
+        color: var(--ink-soft);
+        font-size: var(--step--1);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .archive-item__link {
+        color: var(--ink);
+        text-decoration-line: underline;
+        text-decoration-color: var(--mood-fill);
+        text-decoration-thickness: 0.15em;
+        text-underline-offset: 0.18em;
+    }
+    .archive-item__link:hover {
+        background: var(--mood-fill);
+        color: var(--on-fill);
+    }
+    .archive-item__link.is-essay:lang(ml) {
+        font-size: calc(1em * var(--uroob-scale));
+    }
+    .archive-item__link.is-scribble {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    /* The mood label is its own component, so it is matched by its class. */
+    .archive-item :global(.mood) {
+        grid-column: 2;
+        justify-self: start;
+        margin-block-start: 0.2rem;
+    }
+    @media (min-width: 40rem) {
+        .archive-item {
+            grid-template-columns: 4.25rem minmax(0, 1fr) auto;
+        }
+        .archive-item :global(.mood) {
+            grid-column: 3;
+            margin-block-start: 0;
+        }
+    }
+</style>

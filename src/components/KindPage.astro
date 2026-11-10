@@ -1,0 +1,65 @@
+---
+// The body of "/essays/" and "/scribbles/": every post of one kind, newest first,
+// grouped by month like the thread, 20 to a page.
+import type { Page } from "astro";
+import { groupByMonth, kindHref, type Kind, type Post } from "../lib/posts";
+import Base from "../layouts/Base.astro";
+import MonthList from "./MonthList.astro";
+import Pager from "./Pager.astro";
+import "../styles/page-head.css";
+
+interface Props {
+    kind: Kind;
+    page: Page<Post>;
+}
+
+const { kind, page } = Astro.props;
+const { currentPage, lastPage, total } = page;
+const isEssays = kind === "essays";
+const title = isEssays ? "Essays" : "Scribbles";
+const noun = isEssays ? "essay" : "scribble";
+const other = isEssays
+    ? { name: "Scribbles", href: kindHref("scribbles") }
+    : { name: "Essays", href: kindHref("essays") };
+const lede = isEssays
+    ? "Longer content."
+    : "Short thoughts, written down as they came.";
+const months = groupByMonth(page.data);
+---
+
+<Base
+    title={currentPage > 1 ? `${title}, page ${currentPage}` : title}
+    description={`${lede} All ${total} ${noun}${total === 1 ? "" : "s"} on the blog, newest first.`}
+>
+    <div class="thread">
+        <header class="list-hero">
+            <h1 class="thread__title">
+                {title}
+                {currentPage > 1 && (
+                    <span class="thread__page">, page {currentPage}</span>
+                )}
+            </h1>
+            <p class="hero__lede">
+                {lede} — {total} so far.
+            </p>
+        </header>
+
+        {total === 0 && <p class="empty">Nothing here yet.</p>}
+
+        <MonthList months={months} />
+
+        <Pager
+            current={currentPage}
+            last={lastPage}
+            newer={
+                currentPage > 1 ? kindHref(kind, currentPage - 1) : undefined
+            }
+            older={
+                currentPage < lastPage
+                    ? kindHref(kind, currentPage + 1)
+                    : undefined
+            }
+            label={`${title} pages`}
+        />
+    </div>
+</Base>

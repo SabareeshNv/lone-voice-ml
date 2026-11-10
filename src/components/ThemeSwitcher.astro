@@ -1,0 +1,168 @@
+---
+// One sticker button that cycles Light → Dark → System. The sticker shows the current
+// choice (sun, moon, half-circle) and the words beside it say the same, so it is never a
+// guess. "System" follows the operating system and is the default.
+const sun =
+  '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>';
+const moon = '<path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z"/>';
+const half = '<circle cx="12" cy="12" r="8.2"/><path class="fill" d="M12 3.8a8.2 8.2 0 0 1 0 16.4Z"/>';
+---
+
+<button class="theme-btn" type="button" data-mode="system">
+  <span class="theme-btn__sticker" aria-hidden="true">
+    <svg class="i-sun" viewBox="0 0 24 24" focusable="false" set:html={sun}></svg>
+    <svg class="i-moon" viewBox="0 0 24 24" focusable="false" set:html={moon}></svg>
+    <svg class="i-system" viewBox="0 0 24 24" focusable="false" set:html={half}></svg>
+  </span>
+  <span class="theme-btn__name">
+    <span class="theme-btn__prefix">Theme:</span> <b data-theme-name>System</b>
+    <span class="vh">. Press to change.</span>
+  </span>
+</button>
+<span class="vh" role="status" data-theme-status></span>
+
+<script>
+  const KEY = "theme";
+  const root = document.documentElement;
+  const order = ["light", "dark", "system"] as const;
+  type Mode = (typeof order)[number];
+  const names: Record<Mode, string> = { light: "Light", dark: "Dark", system: "System" };
+
+  const button = document.querySelector<HTMLButtonElement>(".theme-btn");
+  const nameEl = document.querySelector<HTMLElement>("[data-theme-name]");
+  const status = document.querySelector<HTMLElement>("[data-theme-status]");
+
+  function apply(mode: Mode) {
+    try {
+      if (mode === "system") {
+        delete root.dataset.theme;
+        localStorage.removeItem(KEY);
+      } else {
+        root.dataset.theme = mode;
+        localStorage.setItem(KEY, mode);
+      }
+    } catch {
+      /* storage blocked: the choice still applies to this page */
+    }
+  }
+
+  function show(mode: Mode, announce: boolean) {
+    if (!button) return;
+    button.dataset.mode = mode;
+    if (nameEl) nameEl.textContent = names[mode];
+    if (announce && status) status.textContent = `Theme set to ${names[mode]}.`;
+  }
+
+  if (button) {
+    const saved = root.dataset.theme;
+    let mode: Mode = saved === "light" || saved === "dark" ? saved : "system";
+    show(mode, false);
+    button.addEventListener("click", () => {
+      mode = order[(order.indexOf(mode) + 1) % order.length];
+      apply(mode);
+      show(mode, true);
+    });
+  }
+</script>
+
+<style>
+  .theme-btn {
+    --fill: var(--c2);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: start;
+    cursor: pointer;
+  }
+  .theme-btn[data-mode="light"] {
+    --fill: var(--c4);
+  }
+  .theme-btn[data-mode="dark"] {
+    --fill: var(--c1);
+  }
+  .theme-btn__sticker {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.3rem;
+    height: 2.3rem;
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    background: var(--fill);
+    box-shadow: 2px 2px 0 var(--ink);
+    rotate: -8deg;
+  }
+  .theme-btn:hover .theme-btn__sticker {
+    rotate: 4deg;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .theme-btn:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 4px;
+    border-radius: 999px;
+  }
+  .theme-btn__sticker svg {
+    display: none;
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: #12121a;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  /* The icon paths are set with set:html, so they are outside the component's scope. */
+  .theme-btn__sticker svg :global(.fill) {
+    fill: #12121a;
+    stroke: none;
+  }
+  .theme-btn[data-mode="light"] .i-sun,
+  .theme-btn[data-mode="dark"] .i-moon,
+  .theme-btn[data-mode="system"] .i-system {
+    display: block;
+  }
+  .theme-btn__prefix {
+    color: var(--ink-soft);
+  }
+
+  /* A phone shows the sticker alone, a little smaller; the words stay for screen readers. */
+  @media (max-width: 59.999rem) {
+    .theme-btn__sticker {
+      width: 2.1rem;
+      height: 2.1rem;
+    }
+    .theme-btn__name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .theme-btn__sticker {
+      transition:
+        rotate 0.2s cubic-bezier(0.3, 1.6, 0.5, 1),
+        box-shadow 0.12s ease,
+        background-color 0.15s ease;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .theme-btn__sticker {
+      forced-color-adjust: none;
+      border-color: ButtonText;
+    }
+  }
+</style>

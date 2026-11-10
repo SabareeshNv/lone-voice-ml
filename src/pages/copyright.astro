@@ -1,0 +1,41 @@
+---
+import Legal from "../layouts/Legal.astro";
+import { SITE } from "../site";
+
+const owner = SITE.author || SITE.name;
+---
+
+<Legal title="Copyright" description={`Who owns the writing and artwork on ${SITE.name}, and how it may be shared.`}>
+  <h2>Ownership</h2>
+  <p>
+    Unless a page says otherwise, the essays, scribbles, drawings and other original material on
+    {SITE.name} are © {new Date().getFullYear()} {owner}. All rights are reserved.
+  </p>
+
+  <h2>Quoting and sharing</h2>
+  <ul>
+    <li>
+      You are welcome to link to any page, and to quote a short passage with the author's name and a link back to
+      the page it came from.
+    </li>
+    <li>
+      Please do not copy, republish, translate or sell whole posts, or the artwork, without written permission.
+    </li>
+    <li>
+      Please do not use the writing or artwork to train machine-learning models without written permission.
+    </li>
+  </ul>
+
+  <h2>Third-party material</h2>
+  <p>
+    The site is built with free and open-source software (Astro and Pagefind). The typefaces Alegreya Sans,
+    Manjari and Uroob are used under the SIL Open Font License and are served from this site. Their copyright belongs to
+    their designers.
+  </p>
+
+  <h2>Reporting a problem</h2>
+  <p>
+    If you believe something on this site infringes your copyright, please write with the address of the page and
+    a description of the material, and it will be looked into promptly.
+  </p>
+</Legal>

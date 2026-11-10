@@ -1,0 +1,23 @@
+{
+  "name": "lone-voice",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "astro": "astro",
+    "new": "node scripts/new-post.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.4.0",
+    "sharp": "^0.34.0"
+  },
+  "devDependencies": {
+    "pagefind": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

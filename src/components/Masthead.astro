@@ -1,0 +1,42 @@
+---
+// The picture across the top of the home page. Purely decorative.
+import { Image } from "astro:assets";
+import picture from "../assets/masthead.jpg";
+---
+
+<Image
+  class="masthead"
+  src={picture}
+  alt=""
+  widths={[480, 800, 1200, 1600]}
+  sizes="(min-width: 60rem) 52rem, calc(100vw - 2.5rem)"
+  loading="eager"
+  fetchpriority="high"
+/>
+
+<style>
+  /* The <img> is made by Astro's Image component, so it is matched by its class. */
+  :global(.masthead) {
+    display: block;
+    width: 100%;
+    height: clamp(11rem, 25vw, 17rem);
+    object-fit: cover;
+    object-position: 30% 60%; /* keeps the tree and the figure in view when it is cropped */
+    background: var(--sky);
+    border: 3px solid var(--ink);
+    border-radius: 1.5rem;
+    box-shadow: 8px 8px 0 var(--accent);
+  }
+  @media (max-width: 59.999rem) {
+    :global(.masthead) {
+      height: 7.5rem;
+      border-radius: 1.1rem;
+      box-shadow: 5px 5px 0 var(--accent);
+    }
+  }
+  @media print {
+    :global(.masthead) {
+      display: none;
+    }
+  }
+</style>

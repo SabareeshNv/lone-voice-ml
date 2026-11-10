@@ -1,0 +1,459 @@
+---
+// The side column: site name, search, where to go and (at the bottom) the theme.
+// On phones it becomes a slim top bar (see the last section of the styles below).
+import { moodKeys } from "../data/moods";
+import { getPosts, isEssay, kindHref } from "../lib/posts";
+import { SITE } from "../site";
+import MoodKey from "./MoodKey.astro";
+import SiteFooter from "./SiteFooter.astro";
+import ThemeSwitcher from "./ThemeSwitcher.astro";
+
+const posts = await getPosts();
+const essays = posts.filter(isEssay);
+const moods = moodKeys
+  .map((key) => ({ key, n: posts.filter((p) => p.data.mood === key).length }))
+  .filter((m) => m.n > 0);
+
+const path = Astro.url.pathname;
+const isHome = path === "/";
+// The site name is the page heading (h1) on the home page only.
+const Name = isHome ? "h1" : "p";
+
+// "page" = exactly here, "true" = somewhere inside this section.
+const here = (exact: boolean, inside: boolean) => (exact ? "page" : inside ? "true" : undefined);
+const nav: { label: string; href: string; n?: number; current?: string; cls?: string }[] = [
+  { label: "Home", href: "/", n: posts.length, current: here(isHome, /^\/\d+\/$/.test(path)) },
+  {
+    label: "Essays",
+    href: kindHref("essays"),
+    n: essays.length,
+    current: here(/^\/essays\/(\d+\/)?$/.test(path), path.startsWith("/essays/")),
+  },
+  {
+    label: "Scribbles",
+    href: kindHref("scribbles"),
+    n: posts.length - essays.length,
+    current: here(/^\/scribbles\/(\d+\/)?$/.test(path), path.startsWith("/scribbles/")),
+  },
+];
+const archive = {
+  label: "Archive",
+  href: "/archive/",
+  current: here(path === "/archive/", false),
+  cls: "rail__nav-archive",
+};
+const moodsCurrent = here(path === "/moods/", path.startsWith("/moods/"));
+---
+
+<header class="rail">
+  <div class="rail__brand">
+    <Name class="rail__name">
+      <a class="site-name" href="/" aria-current={isHome ? "page" : undefined}>
+        <svg class="site-name__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <path class="mark-line" d="M16 0v32"></path>
+          <circle class="mark-knot" cx="16" cy="11" r="7"></circle>
+          <circle class="mark-ring" cx="16" cy="25" r="4.5"></circle>
+        </svg>
+        <span>{SITE.name}</span>
+      </a>
+    </Name>
+    <p class="tagline">{SITE.tagline}</p>
+  </div>
+
+  <div class="rail__tools">
+    <div class="search-slot">
+      <!-- Icon-only on small screens (saves room), full box in the side column. -->
+      <pagefind-modal-trigger class="search-compact" compact hide-shortcut></pagefind-modal-trigger>
+      <pagefind-modal-trigger class="search-full"></pagefind-modal-trigger>
+      {import.meta.env.DEV && <p class="dev-note">Search appears after <code>npm run build</code>.</p>}
+    </div>
+  </div>
+
+  <nav class="rail__nav" aria-label="Browse the blog">
+    <ul role="list">
+      {
+        nav.map((item) => (
+          <li class={item.cls}>
+            <a class="rail__link" href={item.href} aria-current={item.current}>
+              <span class="rail__nav-label">{item.label}</span>
+              {item.n !== undefined && <span class="rail__nav-n">{item.n}</span>}
+            </a>
+          </li>
+        ))
+      }
+      <li class="rail__nav-moods">
+        <a class="rail__link" href="/moods/" aria-current={moodsCurrent}>
+          <span class="rail__nav-label">Moods</span>
+          <span class="rail__nav-n">{moods.length}</span>
+        </a>
+      </li>
+
+      <!-- Phones only: the moods unfold as a small menu under the bar. -->
+      <li class="rail__nav-fold">
+        <details class="mood-fold">
+          <summary><span>Moods</span></summary>
+          <div class="mood-fold__panel">
+            {moods.length > 0 && <MoodKey moods={moods} />}
+            <a class="rail__all" href="/moods/">All moods <span aria-hidden="true">→</span></a>
+            <a class="rail__all" href="/archive/">Archive <span aria-hidden="true">→</span></a>
+          </div>
+        </details>
+      </li>
+
+      <li class={archive.cls}>
+        <a class="rail__link" href={archive.href} aria-current={archive.current}>
+          <span class="rail__nav-label">{archive.label}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="rail__theme">
+    <ThemeSwitcher />
+  </div>
+
+  <SiteFooter class="site-footer--rail" />
+</header>
+
+<script>
+  // The phone mood menu closes with Escape or a tap anywhere else.
+  const fold = document.querySelector<HTMLDetailsElement>(".mood-fold");
+  if (fold) {
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && fold.open) {
+        fold.open = false;
+        fold.querySelector("summary")?.focus();
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if (fold.open && !fold.contains(e.target as Node)) fold.open = false;
+    });
+  }
+</script>
+
+<style>
+  /* ---------- Wide screens: a side column ---------- */
+
+  .rail {
+    display: grid;
+    gap: 1.75rem;
+    align-content: start;
+    padding-block: 1.75rem 0;
+  }
+
+  /* A column as tall as the window; the theme switch rests at its foot. */
+  @media (min-width: 60rem) {
+    .rail {
+      grid-column: 1;
+      grid-row: 1;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      height: 100dvh;
+      padding-block: 2.5rem 2rem;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .rail__theme {
+      margin-block-start: auto;
+    }
+  }
+
+  /* The site name is an h1 or a p (chosen in the frontmatter), so it is matched by class. */
+  .rail__brand > :global(.rail__name) {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .site-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: var(--step-2);
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .site-name:hover {
+    color: var(--accent);
+  }
+  .site-name__mark {
+    flex: none;
+    width: 2.1rem;
+    height: 2.1rem;
+    overflow: visible;
+  }
+  .mark-line {
+    stroke: currentColor;
+    stroke-width: 2.5;
+    fill: none;
+  }
+  .mark-knot {
+    fill: var(--c4);
+    stroke: currentColor;
+    stroke-width: 2.5;
+  }
+  .mark-ring {
+    fill: var(--bg);
+    stroke: currentColor;
+    stroke-width: 2.5;
+  }
+
+  .tagline {
+    margin-block-start: 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    max-width: 24ch;
+  }
+
+  .rail__tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+  .search-slot {
+    flex: 1 1 10rem;
+    min-width: 0;
+  }
+  /* The search box fills the width of the side column. The component's own markup is
+     not documented, so both the element and the button inside it are stretched. */
+  @media (min-width: 60rem) {
+    pagefind-modal-trigger.search-full {
+      display: block;
+      width: 100%;
+    }
+    pagefind-modal-trigger.search-full :global(button),
+    pagefind-modal-trigger.search-full :global([role="button"]) {
+      width: 100%;
+      box-sizing: border-box;
+      justify-content: space-between;
+    }
+  }
+  .dev-note {
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Where to go ---------- */
+
+  .rail__nav > ul {
+    display: grid;
+    gap: 0.4rem;
+    list-style: none;
+    padding: 0;
+  }
+  .rail__nav li:nth-child(1) { --dot: var(--c1); }
+  .rail__nav li:nth-child(2) { --dot: var(--c2); }
+  .rail__nav li:nth-child(3) { --dot: var(--c3); }
+  .rail__nav li:nth-child(4) { --dot: var(--c4); }
+  .rail__nav li:nth-child(5) { --dot: var(--c1); }
+  .rail__nav li.rail__nav-archive { --dot: var(--c2); }
+  .rail__link {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.35rem 0.7rem;
+    border: 3px solid transparent;
+    border-radius: 0.8rem;
+    color: var(--ink);
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .rail__link::before {
+    content: "";
+    flex: none;
+    width: 0.7rem;
+    height: 0.7rem;
+    border: 2px solid var(--ink);
+    border-radius: 0.2rem;
+    background: var(--dot);
+    rotate: 12deg;
+  }
+  .rail__nav-n {
+    margin-inline-start: auto;
+    padding: 0 0.55em;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .rail__link:hover {
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--dot);
+    translate: -1px -1px;
+  }
+  .rail__link[aria-current] {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    box-shadow: 4px 4px 0 var(--dot);
+  }
+  .rail__nav-fold {
+    display: none;
+  }
+
+  /* "All moods →" and "Archive →" in the phone mood menu. */
+  .rail__all {
+    justify-self: start;
+    font-weight: 700;
+  }
+  .rail__all[aria-current="page"] {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  /* ---------- Small screens: a slim top bar, so the thread starts near the top ----------
+     Row 1: name, search icon, theme switch. Row 2: the places to go, and a "Moods"
+     button that opens the mood labels (and Archive) as a small menu. The tagline
+     belongs to the side column (wide screens). */
+
+  pagefind-modal-trigger.search-compact {
+    display: none;
+  }
+  @media (max-width: 59.999rem) {
+    .rail {
+      position: relative;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        "brand tools theme"
+        "nav nav nav";
+      align-items: center;
+      gap: 0.5rem 0.75rem;
+      padding-block: 0.75rem 0;
+    }
+    .rail__brand {
+      grid-area: brand;
+      min-width: 0;
+    }
+    .rail__tools {
+      grid-area: tools;
+    }
+    .rail__theme {
+      grid-area: theme;
+    }
+    .rail__nav {
+      grid-area: nav;
+      border-block-start: 2px solid var(--ink);
+      font-size: var(--step--1);
+    }
+    .tagline,
+    .dev-note,
+    pagefind-modal-trigger.search-full,
+    .rail__nav-moods,
+    .rail__nav-archive,
+    .rail__nav-n {
+      display: none;
+    }
+    pagefind-modal-trigger.search-compact {
+      display: block;
+    }
+    .search-slot {
+      flex: none;
+    }
+    .site-name {
+      font-size: var(--step-1);
+    }
+    .site-name__mark {
+      width: 1.7rem;
+      height: 1.7rem;
+    }
+
+    .rail__nav > ul {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 0;
+    }
+    .rail__link,
+    .mood-fold summary {
+      min-height: 2.75rem;
+      padding: 0 0.4rem;
+      white-space: nowrap;
+      border: 0;
+      border-radius: 0;
+      font-size: inherit;
+      box-shadow: none;
+      translate: none;
+    }
+    .rail__link::before {
+      display: none;
+    }
+    .rail__link[aria-current] {
+      background: none;
+      color: var(--ink);
+      text-decoration: underline 0.2em var(--accent);
+      text-underline-offset: 0.2em;
+      text-decoration-skip-ink: none;
+      box-shadow: none;
+    }
+    .rail__link:hover {
+      box-shadow: none;
+      translate: none;
+    }
+    .rail__nav-fold {
+      display: block;
+      margin-inline-start: auto;
+    }
+    .mood-fold summary {
+      display: flex;
+      align-items: center;
+      gap: 0.4em;
+      color: var(--accent);
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+    }
+    .mood-fold summary::-webkit-details-marker {
+      display: none;
+    }
+    .mood-fold summary::after {
+      content: "";
+      width: 0.5em;
+      height: 0.5em;
+      border: solid currentColor;
+      border-width: 0 2px 2px 0;
+      rotate: 45deg;
+      translate: 0 -0.15em;
+    }
+    .mood-fold[open] summary::after {
+      rotate: -135deg;
+      translate: 0 0.15em;
+    }
+    .mood-fold summary:focus-visible,
+    .rail__link:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: -3px;
+    }
+    .mood-fold__panel {
+      position: absolute;
+      inset-inline: 0;
+      top: 100%;
+      z-index: 10;
+      display: grid;
+      gap: 0.75rem;
+      padding: 1rem;
+      border: 3px solid var(--ink);
+      border-radius: 1rem;
+      background: var(--surface);
+      box-shadow: 5px 5px 0 var(--accent);
+    }
+  }
+
+  @media print {
+    .rail {
+      display: none;
+    }
+  }
+</style>

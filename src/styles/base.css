@@ -1,0 +1,185 @@
+/* ==========================================================================
+   Truly global styles: resets, plain HTML elements, Malayalam text, links,
+   focus, site-wide motion, and a few small utilities used all over the site.
+   Loaded on every page by src/layouts/Base.astro (after tokens.css).
+   Everything that belongs to one component or page lives in that file's <style>.
+   ========================================================================== */
+
+/* ---------- Reset & elements ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  font-kerning: normal;
+  font-variant-numeric: lining-nums;
+}
+
+/* Four bands of colour across the top of every page. */
+body::before {
+  content: "";
+  display: block;
+  height: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--c1) 0 25%,
+    var(--c2) 0 50%,
+    var(--c3) 0 75%,
+    var(--c4) 0
+  );
+}
+
+/* Malayalam: its own face, more room between lines, no fake italics or weights. */
+:lang(ml) {
+  font-family: var(--font-ml);
+  line-height: 1.85;
+  font-weight: 400;
+  font-variant-numeric: normal;
+}
+:lang(ml) em,
+:lang(ml) i {
+  font-style: normal;
+  font-weight: 700;
+}
+:lang(ml) strong,
+:lang(ml) b {
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.12;
+  font-weight: 700;
+  text-wrap: balance;
+  margin: 0;
+}
+:is(h1, h2, h3, h4):lang(ml) {
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+p,
+ul,
+ol,
+figure,
+blockquote {
+  margin: 0;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+}
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--c4);
+  color: var(--on-fill);
+}
+
+code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: color-mix(in oklab, var(--rule) 60%, transparent);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+/* ---------- Motion (site-wide) ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  a {
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      translate 0.12s ease,
+      box-shadow 0.12s ease;
+  }
+  /* Soft cross-fade between pages, in browsers that support it. No JavaScript. */
+  @view-transition {
+    navigation: auto;
+  }
+}
+
+/* ---------- Utilities ---------- */
+
+/* Visually hidden, still read by screen readers. */
+.vh {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The "·" between items on a line of details. */
+.sep {
+  color: var(--ink-soft);
+}
+
+/* A line of small details under a post: date · mood · … */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.55rem;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+/* Malayalam post titles use Uroob. It has one weight, so it is never bolded or slanted
+   artificially. Put the class on the link itself too: links match :lang(ml) on their
+   own, which would otherwise put them back on Manjari. Each title sets its own size,
+   scaled by --uroob-scale. */
+.ml-title:lang(ml) {
+  font-family: var(--font-ml-title);
+  font-weight: 400;
+  font-synthesis: none;
+  line-height: 1.45;
+}

@@ -1,0 +1,266 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getImage, Image } from "astro:assets";
+import { render } from "astro:content";
+import Mood from "../../components/Mood.astro";
+import MoodGlyph from "../../components/MoodGlyph.astro";
+import { MOODS } from "../../data/moods";
+import Base from "../../layouts/Base.astro";
+import "../../styles/prose.css";
+import { SITE } from "../../site";
+import {
+    excerpt,
+    formatDate,
+    getPosts,
+    isEssay,
+    isoDate,
+    postHref,
+    readingMinutes,
+    threadHref,
+    type Essay,
+    type Post,
+} from "../../lib/posts";
+
+export const getStaticPaths = (async () => {
+    const all = await getPosts();
+    return all.filter(isEssay).map((post) => {
+        const i = all.indexOf(post);
+        return {
+            params: { id: post.id },
+            props: {
+                post,
+                newer: all[i - 1],
+                older: all[i + 1],
+                inThread: threadHref(all, post),
+            },
+        };
+    });
+}) satisfies GetStaticPaths;
+
+interface Props {
+    post: Essay;
+    newer?: Post;
+    older?: Post;
+    inThread: string;
+}
+
+const { post, newer, older, inThread } = Astro.props;
+const { title, summary, cover, date, mood } = post.data;
+const { Content } = await render(post);
+const minutes = readingMinutes(post.body);
+
+const description = summary ?? excerpt(post.body, 155);
+// Sharing picture: the cover cropped to 1200x630, or the site's default picture.
+const og = cover
+    ? await getImage({
+          src: cover.src,
+          width: 1200,
+          height: 630,
+          format: "jpg",
+      })
+    : undefined;
+const url = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    description,
+    datePublished: isoDate(date),
+    inLanguage: SITE.postLanguage,
+    mainEntityOfPage: url,
+    ...(og && { image: new URL(og.src, Astro.site ?? Astro.url).href }),
+    ...(SITE.author && { author: { "@type": "Person", name: SITE.author } }),
+};
+
+const label = (p: Post) =>
+    isEssay(p) ? p.data.title : `A scribble from ${formatDate(p.data.date)}`;
+const isMl = (p: Post) => isEssay(p); // essay titles are Malayalam; the scribble label is English
+---
+
+<Base
+    title={title}
+    description={description}
+    type="article"
+    published={date}
+    image={og?.src}
+    imageAlt={cover?.alt}
+    jsonLd={jsonLd}
+>
+    <article
+        class="essay"
+        style={`--h: ${MOODS[mood].hue}`}
+        data-pagefind-body
+        data-pagefind-meta={`date:${isoDate(date)}`}
+    >
+        <header class="essay__head">
+            <MoodGlyph mood={mood} class="essay__badge" />
+            <h1 class="essay__title ml-title" lang="ml">
+                {title}
+            </h1>
+            {summary && (
+                <p class="essay__summary" lang="ml">
+                    {summary}
+                </p>
+            )}
+            <p class="meta" data-pagefind-ignore>
+                <time datetime={isoDate(date)}>{formatDate(date)}</time>{" "}
+                <span class="sep" aria-hidden="true">
+                    ·
+                </span>{" "}
+                <Mood mood={mood} />{" "}
+                <span class="sep" aria-hidden="true">
+                    ·
+                </span>{" "}
+                <span>{minutes} min read</span>
+            </p>
+        </header>
+
+        {cover && (
+            <figure class="essay__cover">
+                <Image
+                    src={cover.src}
+                    alt={cover.alt}
+                    widths={[480, 720, 960, 1440]}
+                    sizes="(min-width: 60rem) 42rem, calc(100vw - 2.5rem)"
+                    loading="eager"
+                    fetchpriority="high"
+                />
+            </figure>
+        )}
+
+        <div class="prose essay__body" lang="ml">
+            <Content />
+        </div>
+    </article>
+
+    <nav class="adjacent" aria-label="More from the thread">
+        <a class="adjacent__thread" href={inThread}>
+            <span aria-hidden="true">↑</span> Back to this place in the thread
+        </a>
+        <ul class="adjacent__list" role="list">
+            {newer && (
+                <li>
+                    <span class="adjacent__dir">Newer</span>
+                    <a
+                        class="ml-title"
+                        href={postHref(newer)}
+                        lang={isMl(newer) ? "ml" : undefined}
+                    >
+                        {label(newer)}
+                    </a>
+                </li>
+            )}
+            {older && (
+                <li>
+                    <span class="adjacent__dir">Older</span>
+                    <a
+                        class="ml-title"
+                        href={postHref(older)}
+                        lang={isMl(older) ? "ml" : undefined}
+                    >
+                        {label(older)}
+                    </a>
+                </li>
+            )}
+        </ul>
+    </nav>
+</Base>
+
+<style>
+    .essay {
+        max-width: var(--measure);
+    }
+    .essay__head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+        margin-block-end: 2.25rem;
+    }
+    .essay__head > * {
+        grid-column: 1;
+    }
+    /* The mood sticker is its own component, so it is matched by its class. */
+    .essay__head :global(.essay__badge) {
+        width: 4.5rem;
+        height: 4.5rem;
+        padding: 0.65rem;
+        rotate: -8deg;
+        justify-self: start;
+    }
+    @media (min-width: 40rem) {
+        .essay__head {
+            grid-template-columns: minmax(0, 1fr) auto;
+            column-gap: 2rem;
+        }
+        .essay__head :global(.essay__badge) {
+            grid-column: 2;
+            grid-row: 1 / span 3;
+            width: 6.5rem;
+            height: 6.5rem;
+            padding: 0.95rem;
+        }
+    }
+    .essay__title {
+        font-size: var(--step-3);
+    }
+    .essay__title:lang(ml) {
+        font-size: calc(var(--step-3) * var(--uroob-scale));
+        line-height: 1;
+    }
+    .essay__summary {
+        font-size: var(--step-1);
+        color: var(--ink-soft);
+        line-height: 1.25;
+    }
+    .essay__cover {
+        margin-block: 0 2.5rem;
+    }
+    /* The <img> is made by Astro's Image component. */
+    .essay__cover :global(img) {
+        width: 100%;
+        border: 3px solid var(--ink);
+        border-radius: 1rem;
+        box-shadow: 9px 9px 0 var(--mood-fill);
+    }
+    .essay__body {
+        font-size: calc(var(--step-0) * 1.06);
+    }
+
+    /* Newer / older, and back to the thread. */
+    .adjacent {
+        display: grid;
+        gap: 1.25rem;
+        max-width: var(--measure);
+        margin-block-start: 3.5rem;
+        padding-block-start: 1.5rem;
+        border-block-start: 3px solid var(--ink);
+    }
+    .adjacent__list {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        gap: 1rem;
+    }
+    @media (min-width: 40rem) {
+        .adjacent__list {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    .adjacent__list li {
+        display: grid;
+        gap: 0.1rem;
+    }
+    .adjacent__list a:lang(ml) {
+        font-size: calc(1em * var(--uroob-scale));
+    }
+    .adjacent__dir {
+        font-weight: 700;
+        color: var(--ink-soft);
+    }
+
+    @media print {
+        .adjacent {
+            display: none;
+        }
+    }
+</style>

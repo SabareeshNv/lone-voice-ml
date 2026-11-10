@@ -1,0 +1,148 @@
+---
+import { render } from "astro:content";
+import { MOODS } from "../data/moods";
+import {
+  anchorId,
+  COLLAPSE_AFTER,
+  excerpt,
+  formatDate,
+  isoDate,
+  plainText,
+  postHref,
+  PREVIEW_LENGTH,
+  type Post,
+} from "../lib/posts";
+import Mood from "./Mood.astro";
+import MoodGlyph from "./MoodGlyph.astro";
+import "../styles/entry.css";
+import "../styles/prose.css";
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const { date, mood } = post.data;
+const { Content } = await render(post);
+
+// Short scribbles show in full. A long one shows its opening, then a
+// native expand/collapse (works without JavaScript, and with the keyboard).
+const long = plainText(post.body).length > COLLAPSE_AFTER;
+const preview = long ? excerpt(post.body, PREVIEW_LENGTH) : "";
+---
+
+<article
+  class="entry entry--scribble"
+  id={anchorId(post)}
+  tabindex="-1"
+  style={`--h: ${MOODS[mood].hue}`}
+>
+  <MoodGlyph mood={mood} class="entry__badge" />
+  <div class="entry__text prose" lang="ml">
+    {
+      long ? (
+        <>
+          <p class="more__preview">{preview}</p>
+          <details class="more">
+            <summary>
+              <span class="more__open">Read the rest</span>
+              <span class="more__close">Show less</span>
+            </summary>
+            <div class="more__full">
+              <Content />
+            </div>
+          </details>
+        </>
+      ) : (
+        <Content />
+      )
+    }
+  </div>
+  <p class="meta entry__meta">
+    <time datetime={isoDate(date)}>{formatDate(date)}</time>{" "}<span class="sep" aria-hidden="true">·</span>{" "}
+    <Mood mood={mood} />{" "}<span class="sep" aria-hidden="true">·</span>{" "}
+    <a class="permalink" href={postHref(post)} data-thread-target={anchorId(post)} title="Permalink">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"></path>
+        <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"></path>
+      </svg>
+      <span class="vh">Permalink to the scribble of {formatDate(date)}</span>
+    </a>
+  </p>
+</article>
+
+<style>
+  /* A tinted band running out from the thread, the whole text inside. */
+  .entry--scribble {
+    background: color-mix(in oklab, var(--mood-fill) 20%, var(--bg));
+    margin-block: 0.6rem;
+  }
+  .entry__text {
+    max-width: 34rem;
+    font-size: calc(var(--step-0) * 1.1);
+  }
+
+  /* The permalink: a small, quiet link icon, with a comfortable tap target around it. */
+  .permalink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0.35rem;
+    margin: -0.35rem;
+    color: var(--ink-soft);
+    text-decoration-color: color-mix(in oklab, var(--ink) 40%, transparent);
+    opacity: 0.75;
+  }
+  .permalink svg {
+    flex: none;
+    width: 1.05em;
+    height: 1.05em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .permalink:hover,
+  .permalink:focus-visible {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  /* A long scribble: the opening, then a native expand/collapse for the rest. */
+  .more__preview:has(+ .more[open]) {
+    display: none;
+  }
+  .more > summary {
+    display: inline-block;
+    margin-block-start: 0.2rem;
+    padding: 0.2rem 0.9rem 0.3rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: var(--step--1);
+    font-weight: 700;
+    line-height: 1.4;
+    cursor: pointer;
+    list-style: none;
+  }
+  .more > summary::-webkit-details-marker {
+    display: none;
+  }
+  .more > summary:hover {
+    background: var(--mood-fill);
+    color: var(--on-fill);
+  }
+  .more__close,
+  .more[open] .more__open {
+    display: none;
+  }
+  .more[open] .more__close {
+    display: inline;
+  }
+  .more__full {
+    margin-block-start: 0.9rem;
+  }
+</style>

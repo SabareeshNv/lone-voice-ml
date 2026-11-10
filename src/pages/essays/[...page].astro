@@ -1,0 +1,19 @@
+---
+// "/essays/", "/essays/2/" …  (20 to a page; see LIST_PAGE_SIZE in src/lib/posts.ts)
+import type { GetStaticPaths, Page } from "astro";
+import KindPage from "../../components/KindPage.astro";
+import { getPosts, isEssay, LIST_PAGE_SIZE, type Post } from "../../lib/posts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = (await getPosts()).filter(isEssay);
+  return paginate(posts, { pageSize: LIST_PAGE_SIZE });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  page: Page<Post>;
+}
+
+const { page } = Astro.props;
+---
+
+<KindPage kind="essays" page={page} />

@@ -1,0 +1,79 @@
+---
+// The thread: every post, newest first, grouped by month, 30 to a page.
+// Page 1 is "/", then "/2/", "/3/" …
+import type { GetStaticPaths, Page } from "astro";
+import Masthead from "../components/Masthead.astro";
+import MonthList from "../components/MonthList.astro";
+import Pager from "../components/Pager.astro";
+import Base from "../layouts/Base.astro";
+import "../styles/page-head.css";
+import { SITE } from "../site";
+import { getPosts, groupByMonth, PAGE_SIZE, pageHref, type Post } from "../lib/posts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = await getPosts();
+  return paginate(posts, { pageSize: PAGE_SIZE });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  page: Page<Post>;
+}
+
+const { page } = Astro.props;
+const months = groupByMonth(page.data);
+// On page 1 the site name (in the side column) is the page's h1; later pages get a hidden one.
+const { currentPage, lastPage } = page;
+const newer = currentPage > 1 ? pageHref(currentPage - 1) : undefined;
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE.name,
+  description: SITE.description,
+  inLanguage: SITE.postLanguage,
+  url: new URL("/", Astro.site ?? Astro.url).href,
+};
+const older = currentPage < lastPage ? pageHref(currentPage + 1) : undefined;
+---
+
+<Base title={currentPage > 1 ? `Home, page ${currentPage}` : undefined} jsonLd={currentPage === 1 ? jsonLd : undefined}>
+  <div class="thread">
+    {
+      currentPage === 1 ? (
+        <div class="hero">
+          <Masthead />
+        </div>
+      ) : (
+        <h1 class="vh">Home, page {currentPage}</h1>
+      )
+    }
+
+    {page.data.length === 0 && <p class="empty">Nothing written yet.</p>}
+
+    <MonthList months={months} />
+
+    <Pager current={currentPage} last={lastPage} newer={newer} older={older} label="Thread pages" />
+  </div>
+</Base>
+
+<script>
+  // A scribble's permalink is its stable URL (/scribbles/<id>/), which redirects
+  // to its place in the thread. When the scribble is already on this page,
+  // skip the round trip: update the address bar and scroll to it directly.
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[data-thread-target]");
+    const entry = link?.dataset.threadTarget && document.getElementById(link.dataset.threadTarget);
+    if (!link || !entry) return;
+
+    event.preventDefault();
+    history.pushState(null, "", link.href);
+    document.querySelector(".entry.is-current")?.classList.remove("is-current");
+    entry.classList.add("is-current");
+    entry.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+    entry.focus({ preventScroll: true });
+  });
+</script>

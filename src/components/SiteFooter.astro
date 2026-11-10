@@ -1,0 +1,79 @@
+---
+// Copyright line and policy links. Shown at the foot of the side column on wide
+// screens, and at the foot of the page on phones (see the styles below).
+import { SITE } from "../site";
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<footer class:list={["site-footer", className]}>
+  <ul class="site-footer__links" role="list">
+    <li><a href="/copyright/">Copyright</a></li>
+    <li><a href="/privacy/">Privacy Policy</a></li>
+    <li><a href="/content-policy/">Content Policy</a></li>
+  </ul>
+  <p>© {new Date().getFullYear()} {SITE.author || SITE.name}</p>
+</footer>
+
+<style>
+  .site-footer {
+    display: grid;
+    gap: 0.25rem 1.5rem;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+  }
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 1rem;
+    list-style: none;
+    padding: 0;
+  }
+  .site-footer__links a {
+    display: inline-block;
+    padding-block: 0.3rem;
+    font-weight: 700;
+  }
+
+  /* At the foot of the page (phones). One row (links left, copyright right) when
+     there is room; stacked, with the copyright centred on its own line, when not. */
+  .site-footer--page {
+    padding-block-start: 1.25rem;
+    border-block-start: 3px solid var(--ink);
+  }
+  @media (min-width: 38rem) {
+    .site-footer--page {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+    .site-footer--page > p {
+      text-align: end;
+    }
+  }
+  @media (max-width: 37.99rem) {
+    .site-footer--page > .site-footer__links {
+      justify-content: center;
+    }
+    .site-footer--page > p {
+      text-align: center;
+    }
+  }
+
+  /* At the foot of the side column (wide screens), under the theme switch. */
+  .site-footer--rail {
+    display: none;
+  }
+  @media (min-width: 60rem) {
+    .site-footer--page {
+      display: none;
+    }
+    .site-footer--rail {
+      display: grid;
+      margin-block-start: -0.75rem; /* sits close under the theme switch */
+    }
+  }
+</style>

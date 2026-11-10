@@ -1,0 +1,45 @@
+---
+// The mood labels with their post counts (used in the side column and the phone fold).
+import type { MoodKey } from "../data/moods";
+import Mood from "./Mood.astro";
+
+interface Props {
+  moods: { key: MoodKey; n: number }[];
+  class?: string;
+}
+
+const { moods, class: className } = Astro.props;
+---
+
+<ul class:list={["mood-key", className]} role="list" aria-label="Moods in the thread">
+  {
+    moods.map((m) => (
+      <li>
+        <Mood mood={m.key} />
+        <span class="mood-key__n">
+          {m.n}
+          <span class="vh">{m.n === 1 ? " post" : " posts"}</span>
+        </span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .mood-key {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+  }
+  .mood-key li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .mood-key__n {
+    font-weight: 700;
+    color: var(--ink-soft);
+  }
+</style>
